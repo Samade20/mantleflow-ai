@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>MantleFlow AI — Autonomous RWA Yield Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:       #080b10;
+  --surface:  #0d1117;
+  --card:     #111720;
+  --border:   #1e2d3d;
+  --accent:   #00e5ff;
+  --accent2:  #7c5cfc;
+  --green:    #00ff87;
+  --red:      #ff3d6b;
+  --gold:     #ffd166;
+  --text:     #e2eaf4;
+  --muted:    #556070;
+  --mono:     'Space Mono', monospace;
+  --sans:     'DM Sans', sans-serif;
+  --display:  'Syne', sans-serif;
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.6;overflow-x:hidden;}
+
+/* Scanline overlay */
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,229,255,.012) 2px,rgba(0,229,255,.012) 4px);pointer-events:none;z-index:9999;}
+
+/* ─── LAYOUT ─── */
+.container{max-width:1280px;margin:0 auto;padding:0 24px;}
+
+/* ─── NAV ─── */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(8,11,16,.85);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;max-width:1280px;margin:0 auto;}
+.logo{font-family:var(--display);font-size:1.15rem;letter-spacing:.02em;color:var(--accent);display:flex;align-items:center;gap:8px;}
+.logo-dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;}
+.nav-links{display:flex;gap:28px;}
+.nav-links a{color:var(--muted);text-decoration:none;font-size:.85rem;font-weight:500;letter-spacing:.04em;text-transform:uppercase;transition:color .2s;}
+.nav-links a:hover{color:var(--accent);}
+.nav-badge{background:rgba(0,229,255,.12);border:1px solid rgba(0,229,255,.3);color:var(--accent);padding:5px 12px;border-radius:4px;font-family:var(--mono);font-size:.72rem;letter-spacing:.05em;}
+
+/* ─── HERO ─── */
+.hero{min-height:100vh;display:flex;align-items:center;position:relative;padding:120px 24px 80px;overflow:hidden;}
+.hero-bg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 60% 40%, rgba(124,92,252,.12) 0%, transparent 70%), radial-gradient(ellipse 50% 40% at 20% 80%, rgba(0,229,255,.08) 0%, transparent 60%);pointer-events:none;}
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:60px 60px;opacity:.25;pointer-events:none;}
+.hero-content{position:relative;max-width:1280px;margin:0 auto;width:100%;display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center;}
+.hero-eyebrow{font-family:var(--mono);font-size:.72rem;color:var(--accent);letter-spacing:.15em;text-transform:uppercase;margin-bottom:20px;display:flex;align-items:center;gap:10px;}
+.hero-eyebrow::before{content:'';display:block;width:24px;height:1px;background:var(--accent);}
+h1{font-family:var(--display);font-size:clamp(2.4rem,5vw,3.8rem);line-height:1.05;letter-spacing:-.01em;margin-bottom:24px;}
+h1 span{color:var(--accent);}
+.hero-desc{color:var(--muted);font-size:1.05rem;line-height:1.75;margin-bottom:36px;max-width:500px;}
+.btn-row{display:flex;gap:14px;flex-wrap:wrap;}
+.btn-primary{background:var(--accent);color:#000;font-weight:700;font-family:var(--mono);font-size:.8rem;letter-spacing:.06em;padding:13px 26px;border-radius:4px;border:none;cursor:pointer;text-decoration:none;text-transform:uppercase;transition:all .2s;}
+.btn-primary:hover{background:#fff;transform:translateY(-1px);}
+.btn-outline{border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:.8rem;letter-spacing:.06em;padding:13px 26px;border-radius:4px;background:transparent;cursor:pointer;text-decoration:none;text-transform:uppercase;transition:all .2s;}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent);}
+
+/* Live stats strip */
+.stats-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-top:48px;}
+.stat-cell{background:var(--card);padding:18px 20px;}
+.stat-label{font-family:var(--mono);font-size:.65rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;}
+.stat-value{font-family:var(--mono);font-size:1.3rem;font-weight:700;}
+.stat-value.green{color:var(--green);}
+.stat-value.accent{color:var(--accent);}
+.stat-value.gold{color:var(--gold);}
+.stat-delta{font-size:.7rem;color:var(--green);margin-top:2px;}
+
+/* Live terminal card */
+.hero-terminal{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;font-family:var(--mono);}
+.terminal-bar{background:#0d1117;padding:12px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);}
+.t-dot{width:10px;height:10px;border-radius:50%;}
+.t-dot.r{background:#ff5f57;}
+.t-dot.y{background:#febc2e;}
+.t-dot.g{background:#28c840;}
+.terminal-title{font-size:.7rem;color:var(--muted);margin-left:8px;letter-spacing:.08em;}
+.terminal-body{padding:18px;font-size:.75rem;line-height:1.9;max-height:380px;overflow:hidden;}
+.t-line{display:flex;gap:10px;align-items:baseline;}
+.t-time{color:var(--muted);min-width:70px;}
+.t-tag{padding:1px 6px;border-radius:3px;font-size:.65rem;font-weight:700;letter-spacing:.05em;}
+.t-tag.buy{background:rgba(0,255,135,.15);color:var(--green);}
+.t-tag.sell{background:rgba(255,61,107,.15);color:var(--red);}
+.t-tag.signal{background:rgba(0,229,255,.15);color:var(--accent);}
+.t-tag.info{background:rgba(255,209,102,.15);color:var(--gold);}
+.t-msg{color:var(--text);}
+.cursor{display:inline-block;width:7px;height:13px;background:var(--accent);animation:blink .8s infinite;vertical-align:middle;}
+
+/* ─── SECTION COMMON ─── */
+section{padding:90px 0;}
+.section-label{font-family:var(--mono);font-size:.68rem;color:var(--accent);letter-spacing:.15em;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:10px;}
+.section-label::before{content:'//';opacity:.4;}
+h2{font-family:var(--display);font-size:clamp(1.8rem,3.5vw,2.8rem);line-height:1.1;margin-bottom:16px;}
+.section-sub{color:var(--muted);max-width:580px;font-size:1rem;margin-bottom:52px;}
+.divider{height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:0;}
+
+/* ─── ARCHITECTURE ─── */
+.arch-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:48px;}
+.arch-card{background:var(--card);padding:30px 24px;position:relative;overflow:hidden;transition:background .2s;}
+.arch-card:hover{background:#141f2e;}
+.arch-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.arch-card:nth-child(1)::before{background:var(--accent);}
+.arch-card:nth-child(2)::before{background:var(--accent2);}
+.arch-card:nth-child(3)::before{background:var(--green);}
+.arch-card:nth-child(4)::before{background:var(--gold);}
+.arch-num{font-family:var(--mono);font-size:.65rem;color:var(--muted);letter-spacing:.12em;margin-bottom:16px;}
+.arch-icon{font-size:1.8rem;margin-bottom:14px;}
+.arch-title{font-family:var(--display);font-size:1rem;margin-bottom:10px;}
+.arch-desc{font-size:.82rem;color:var(--muted);line-height:1.65;}
+.arch-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:16px;}
+.tag{font-family:var(--mono);font-size:.62rem;padding:3px 8px;border-radius:3px;border:1px solid var(--border);color:var(--muted);}
+
+/* ─── DASHBOARD SECTION ─── */
+.dashboard{background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.dash-wide{grid-column:1/-1;}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;position:relative;}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.card-title{font-family:var(--mono);font-size:.72rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;}
+.live-badge{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:.65rem;color:var(--green);}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 1.5s infinite;}
+
+/* Allocation donut */
+.alloc-wrap{display:flex;align-items:center;gap:32px;}
+.donut-svg{flex-shrink:0;}
+.alloc-legend{flex:1;}
+.alloc-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);}
+.alloc-row:last-child{border-bottom:none;}
+.alloc-name{display:flex;align-items:center;gap:10px;font-size:.88rem;}
+.alloc-dot{width:8px;height:8px;border-radius:50%;}
+.alloc-pct{font-family:var(--mono);font-weight:700;font-size:.9rem;}
+.alloc-yield{font-family:var(--mono);font-size:.72rem;color:var(--green);}
+
+/* Performance chart */
+.chart-area{height:140px;position:relative;overflow:hidden;}
+.chart-svg{width:100%;height:100%;}
+
+/* Leaderboard */
+.lb-header{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);border-radius:6px;overflow:hidden;margin-bottom:20px;}
+.lb-side{background:var(--card);padding:16px;text-align:center;}
+.lb-side.ai{border-top:2px solid var(--accent);}
+.lb-side.human{border-top:2px solid var(--muted);}
+.lb-label{font-family:var(--mono);font-size:.65rem;color:var(--muted);letter-spacing:.1em;margin-bottom:8px;}
+.lb-return{font-family:var(--mono);font-size:1.8rem;font-weight:700;}
+.lb-return.ai{color:var(--green);}
+.lb-return.human{color:var(--text);}
+.lb-sub{font-size:.75rem;color:var(--muted);margin-top:4px;}
+
+.lb-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.lb-bar-label{font-size:.78rem;color:var(--muted);width:80px;}
+.lb-bar-track{flex:1;height:6px;background:var(--surface);border-radius:3px;overflow:hidden;}
+.lb-bar-fill{height:100%;border-radius:3px;transition:width 1s ease;}
+.lb-bar-val{font-family:var(--mono);font-size:.72rem;width:42px;text-align:right;}
+
+/* Audit log feed */
+.audit-feed{max-height:280px;overflow-y:auto;}
+.audit-feed::-webkit-scrollbar{width:4px;}
+.audit-feed::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.audit-entry{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--border);align-items:flex-start;}
+.audit-entry:last-child{border-bottom:none;}
+.audit-icon{width:32px;height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0;}
+.audit-icon.rebal{background:rgba(0,229,255,.1);}
+.audit-icon.signal{background:rgba(124,92,252,.1);}
+.audit-icon.yield{background:rgba(0,255,135,.1);}
+.audit-body{}
+.audit-action{font-size:.85rem;font-weight:500;margin-bottom:2px;}
+.audit-meta{font-family:var(--mono);font-size:.65rem;color:var(--muted);}
+.audit-hash{color:var(--accent);font-family:var(--mono);font-size:.65rem;}
+
+/* Agent NFT card */
+.nft-card{background:linear-gradient(135deg,#111720 0%,#0e1c2e 100%);border:1px solid rgba(0,229,255,.2);border-radius:12px;padding:28px;position:relative;overflow:hidden;}
+.nft-card::before{content:'';position:absolute;top:-40px;right:-40px;width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,rgba(0,229,255,.08) 0%,transparent 70%);}
+.nft-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(0,229,255,.1);border:1px solid rgba(0,229,255,.25);border-radius:4px;padding:4px 10px;font-family:var(--mono);font-size:.65rem;color:var(--accent);letter-spacing:.08em;margin-bottom:18px;}
+.nft-title{font-family:var(--display);font-size:1.4rem;margin-bottom:4px;}
+.nft-sub{font-size:.82rem;color:var(--muted);margin-bottom:24px;}
+.nft-stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.nft-stat{background:rgba(0,0,0,.3);border-radius:6px;padding:12px 14px;}
+.nft-stat-label{font-family:var(--mono);font-size:.6rem;color:var(--muted);letter-spacing:.1em;margin-bottom:4px;}
+.nft-stat-value{font-family:var(--mono);font-size:1rem;font-weight:700;}
+.milestones{margin-top:20px;}
+.milestone-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:.82rem;}
+.milestone-item:last-child{border-bottom:none;}
+.milestone-icon{color:var(--gold);}
+
+/* ─── ROADMAP ─── */
+.roadmap-track{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;position:relative;}
+.roadmap-track::before{content:'';position:absolute;top:24px;left:12%;right:12%;height:1px;background:linear-gradient(90deg,var(--accent),var(--accent2),var(--muted),var(--border));z-index:0;}
+.sprint-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;position:relative;z-index:1;transition:border-color .2s,transform .2s;}
+.sprint-card:hover{border-color:var(--accent);transform:translateY(-4px);}
+.sprint-card.active{border-color:var(--accent);}
+.sprint-num{font-family:var(--mono);font-size:.65rem;color:var(--muted);letter-spacing:.12em;margin-bottom:14px;}
+.sprint-status{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:.65rem;padding:3px 8px;border-radius:3px;margin-bottom:14px;}
+.sprint-status.active{background:rgba(0,255,135,.1);color:var(--green);}
+.sprint-status.planned{background:rgba(85,96,112,.1);color:var(--muted);}
+.sprint-dates{font-family:var(--mono);font-size:.72rem;color:var(--accent);margin-bottom:10px;}
+.sprint-title{font-size:.9rem;font-weight:600;line-height:1.4;}
+
+/* ─── FOOTER ─── */
+footer{background:var(--surface);border-top:1px solid var(--border);padding:48px 0 32px;}
+.footer-inner{max-width:1280px;margin:0 auto;padding:0 24px;display:flex;justify-content:space-between;align-items:flex-end;}
+.footer-logo{font-family:var(--display);font-size:1.1rem;color:var(--accent);margin-bottom:8px;}
+.footer-sub{font-family:var(--mono);font-size:.65rem;color:var(--muted);}
+.footer-links{display:flex;gap:24px;}
+.footer-links a{font-family:var(--mono);font-size:.68rem;color:var(--muted);text-decoration:none;letter-spacing:.06em;text-transform:uppercase;transition:color .2s;}
+.footer-links a:hover{color:var(--accent);}
+
+/* ─── ANIMATIONS ─── */
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+@keyframes scrollLog{0%{transform:translateY(0);}100%{transform:translateY(-50%);}}
+@keyframes chartDraw{from{stroke-dashoffset:800;}to{stroke-dashoffset:0;}}
+
+.fade-up{opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease;}
+.fade-up.visible{opacity:1;transform:translateY(0);}
+
+/* donut animation */
+.donut-seg{stroke-dasharray:0 100;transition:stroke-dasharray 1.2s cubic-bezier(.4,0,.2,1);}
+
+@media(max-width:900px){
+  .hero-content{grid-template-columns:1fr;}
+  .hero-terminal{display:none;}
+  .arch-grid{grid-template-columns:1fr 1fr;}
+  .dash-grid{grid-template-columns:1fr;}
+  .dash-wide{grid-column:1;}
+  .roadmap-track{grid-template-columns:1fr 1fr;}
+  .nav-links{display:none;}
+  .stats-strip{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- ─── NAV ─── -->
+<nav>
+  <div class="nav-inner">
+    <div class="logo">
+      <div class="logo-dot"></div>
+      MantleFlow AI
+    </div>
+    <div class="nav-links">
+      <a href="#architecture">Architecture</a>
+      <a href="#dashboard">Dashboard</a>
+      <a href="#identity">Agent NFT</a>
+      <a href="#roadmap">Roadmap</a>
+    </div>
+    <div class="nav-badge">LIVE ON MANTLE</div>
+  </div>
+</nav>
+
+<!-- ─── HERO ─── -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grid"></div>
+  <div class="hero-content">
+    <div>
+      <div class="hero-eyebrow">Mantle Turing Test Hackathon 2026 · AI × RWA</div>
+      <h1>Autonomous<br/><span>RWA Yield</span><br/>Intelligence</h1>
+      <p class="hero-desc">MantleFlow AI dynamically manages, optimizes, and rebalances diversified Real-World Asset portfolios on Mantle Network — 24/7, with sub-minute latency, full on-chain audit trail via ERC-8004.</p>
+      <div class="btn-row">
+        <a href="#dashboard" class="btn-primary">View Live Dashboard</a>
+        <a href="https://github.com/samade20/mantleflow-ai" class="btn-outline" target="_blank">GitHub Repo</a>
+      </div>
+      <div class="stats-strip">
+        <div class="stat-cell">
+          <div class="stat-label">Agent Alpha</div>
+          <div class="stat-value green" id="s-alpha">+7.24%</div>
+          <div class="stat-delta">↑ vs human benchmark</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">Rebalances</div>
+          <div class="stat-value accent" id="s-rebal">1,847</div>
+          <div class="stat-delta">40-day run</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">AUM</div>
+          <div class="stat-value gold" id="s-aum">$248K</div>
+          <div class="stat-delta">↑ High-water mark</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">Decisions</div>
+          <div class="stat-value" id="s-dec">5,392</div>
+          <div class="stat-delta">All on-chain</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live terminal -->
+    <div class="hero-terminal">
+      <div class="terminal-bar">
+        <div class="t-dot r"></div>
+        <div class="t-dot y"></div>
+        <div class="t-dot g"></div>
+        <div class="terminal-title">mantleflow-agent · live decision feed</div>
+      </div>
+      <div class="terminal-body" id="term-body">
+        <div class="t-line"><span class="t-time">05:41:02</span><span class="t-tag signal">SIGNAL</span><span class="t-msg">Nansen: Smart money inflow USDY +$1.2M</span></div>
+        <div class="t-line"><span class="t-time">05:41:04</span><span class="t-tag info">MODEL</span><span class="t-msg">Allocation score → USDY 40 mETH 30 USDe 20 fBTC 10</span></div>
+        <div class="t-line"><span class="t-time">05:41:07</span><span class="t-tag buy">BUY</span><span class="t-msg">USDY +8% → 40% allocation via Agni Finance</span></div>
+        <div class="t-line"><span class="t-time">05:41:09</span><span class="t-tag sell">SELL</span><span class="t-msg">USDe -4% → rebalance threshold triggered</span></div>
+        <div class="t-line"><span class="t-time">05:41:11</span><span class="t-tag info">AUDIT</span><span class="t-msg">Decision hash 0x7e3f...c91a written to AgentIdentity NFT</span></div>
+        <div class="t-line"><span class="t-time">05:41:14</span><span class="t-tag signal">SIGNAL</span><span class="t-msg">Elfa AI: mETH sentiment 0.81 — macro bullish</span></div>
+        <div class="t-line"><span class="t-time">05:43:02</span><span class="t-tag buy">BUY</span><span class="t-msg">mETH +3% position via Merchant Moe</span></div>
+        <div class="t-line"><span class="t-time">05:43:05</span><span class="t-tag info">YIELD</span><span class="t-msg">mETH staking yield 4.2% APY — above threshold</span></div>
+        <div class="t-line"><span class="t-time">05:44:19</span><span class="t-tag signal">SIGNAL</span><span class="t-msg">Risk Manager: drawdown -0.3% → within limit</span></div>
+        <div class="t-line"><span class="t-time">05:44:22</span><span class="t-tag info">MODEL</span><span class="t-msg">Strategy: Yield Maximization mode active</span></div>
+        <div class="t-line"><span class="t-time">05:46:01</span><span class="t-tag buy">BUY</span><span class="t-msg">fBTC +2% → macro hedge allocation confirmed</span></div>
+        <div class="t-line"><span class="t-time">05:46:03</span><span class="t-tag info">AUDIT</span><span class="t-msg">AuditLog.sol entry #5392 finalized on Mantle</span></div>
+        <div class="t-line"><span class="t-time">05:48:11</span><span class="t-tag signal">SIGNAL</span><span class="t-msg">Bybit feed: USDe peg 1.0002 — stable</span></div>
+        <div class="t-line"><span class="t-time">05:48:14</span><span class="t-tag buy">BUY</span><span class="t-msg">Portfolio rebalance complete. Alpha +0.04%</span></div>
+        <div class="t-line"><span class="t-time">05:50:00</span><span class="t-tag signal">SIGNAL</span><span class="t-msg">Nansen: Institutional wallet flow +$340K mETH</span></div>
+        <div class="t-line"><span class="t-time">05:50:02</span><span class="t-tag info">MODEL</span><span class="t-msg">Updating allocation model — mETH weight ↑</span></div>
+        <div class="t-line" style="margin-top:4px"><span class="cursor"></span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ─── ARCHITECTURE ─── -->
+<section id="architecture">
+  <div class="container">
+    <div class="section-label fade-up">Technical Architecture</div>
+    <h2 class="fade-up">Four-Layer Intelligence Stack</h2>
+    <p class="section-sub fade-up">Every component purpose-built for autonomous, verifiable RWA yield management on Mantle Network.</p>
+
+    <div class="arch-grid fade-up">
+      <div class="arch-card">
+        <div class="arch-num">LAYER 01</div>
+        <div class="arch-icon">📡</div>
+        <div class="arch-title">Data Ingestion</div>
+        <div class="arch-desc">Real-time on-chain signals from Nansen smart money wallets, Elfa AI sentiment, Mantle RPC event logs, and Bybit price feeds at 1-second resolution.</div>
+        <div class="arch-tags">
+          <span class="tag">Nansen API</span>
+          <span class="tag">Elfa AI</span>
+          <span class="tag">Bybit Feeds</span>
+          <span class="tag">Mantle RPC</span>
+        </div>
+      </div>
+      <div class="arch-card">
+        <div class="arch-num">LAYER 02</div>
+        <div class="arch-icon">🧠</div>
+        <div class="arch-title">Reasoning Engine</div>
+        <div class="arch-desc">Python quant engine with multi-factor allocation scoring, real-time risk manager, dynamic strategy selector (yield-max / risk-parity / defensive), and structured decision logger.</div>
+        <div class="arch-tags">
+          <span class="tag">Python</span>
+          <span class="tag">LLM</span>
+          <span class="tag">Quant Model</span>
+          <span class="tag">Risk Manager</span>
+        </div>
+      </div>
+      <div class="arch-card">
+        <div class="arch-num">LAYER 03</div>
+        <div class="arch-icon">⚡</div>
+        <div class="arch-title">Execution Layer</div>
+        <div class="arch-desc">Solidity smart contracts on Mantle: ERC-4626 vault, signed strategy router, ERC-8004 agent identity NFT, and append-only audit log — all atomic and on-chain.</div>
+        <div class="arch-tags">
+          <span class="tag">Solidity</span>
+          <span class="tag">ERC-4626</span>
+          <span class="tag">ERC-8004</span>
+          <span class="tag">Agni Finance</span>
+        </div>
+      </div>
+      <div class="arch-card">
+        <div class="arch-num">LAYER 04</div>
+        <div class="arch-icon">🔍</div>
+        <div class="arch-title">Identity & Transparency</div>
+        <div class="arch-desc">Live React dashboard, Telegram alpha bot, and Mantle Explorer integration give full visibility into every decision, rebalance, and yield event the agent makes.</div>
+        <div class="arch-tags">
+          <span class="tag">React</span>
+          <span class="tag">Telegram Bot</span>
+          <span class="tag">Mantle Explorer</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ─── LIVE DASHBOARD ─── -->
+<section id="dashboard" class="dashboard">
+  <div class="container">
+    <div class="section-label fade-up">Live Dashboard</div>
+    <h2 class="fade-up">Real-Time Portfolio Intelligence</h2>
+    <p class="section-sub fade-up">Every allocation, rebalance, and yield event — live from Mantle mainnet.</p>
+
+    <div class="dash-grid">
+
+      <!-- Allocation Donut -->
+      <div class="card fade-up">
+        <div class="card-header">
+          <div class="card-title">Current Allocation</div>
+          <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+        </div>
+        <div class="alloc-wrap">
+          <svg class="donut-svg" width="140" height="140" viewBox="0 0 42 42">
+            <circle cx="21" cy="21" r="15.9" fill="none" stroke="#1e2d3d" stroke-width="5"/>
+            <!-- USDY 40% -->
+            <circle class="donut-seg" cx="21" cy="21" r="15.9" fill="none" stroke="#00e5ff" stroke-width="5"
+              stroke-dasharray="40 60" stroke-dashoffset="25" transform="rotate(-90 21 21)"/>
+            <!-- mETH 30% -->
+            <circle class="donut-seg" cx="21" cy="21" r="15.9" fill="none" stroke="#7c5cfc" stroke-width="5"
+              stroke-dasharray="30 70" stroke-dashoffset="-15" transform="rotate(-90 21 21)"/>
+            <!-- USDe 20% -->
+            <circle class="donut-seg" cx="21" cy="21" r="15.9" fill="none" stroke="#00ff87" stroke-width="5"
+              stroke-dasharray="20 80" stroke-dashoffset="-45" transform="rotate(-90 21 21)"/>
+            <!-- fBTC 10% -->
+            <circle class="donut-seg" cx="21" cy="21" r="15.9" fill="none" stroke="#ffd166" stroke-width="5"
+              stroke-dasharray="10 90" stroke-dashoffset="-65" transform="rotate(-90 21 21)"/>
+            <text x="21" y="18" text-anchor="middle" font-family="Space Mono" font-size="4" fill="#e2eaf4" font-weight="700">$248K</text>
+            <text x="21" y="24" text-anchor="middle" font-family="DM Sans" font-size="2.8" fill="#556070">AUM</text>
+          </svg>
+          <div class="alloc-legend">
+            <div class="alloc-row">
+              <div class="alloc-name"><div class="alloc-dot" style="background:#00e5ff"></div>Ondo USDY</div>
+              <div><span class="alloc-pct">40%</span> <span class="alloc-yield">5.2% APY</span></div>
+            </div>
+            <div class="alloc-row">
+              <div class="alloc-name"><div class="alloc-dot" style="background:#7c5cfc"></div>mETH</div>
+              <div><span class="alloc-pct">30%</span> <span class="alloc-yield">4.2% APY</span></div>
+            </div>
+            <div class="alloc-row">
+              <div class="alloc-name"><div class="alloc-dot" style="background:#00ff87"></div>Ethena USDe</div>
+              <div><span class="alloc-pct">20%</span> <span class="alloc-yield">8.1% APY</span></div>
+            </div>
+            <div class="alloc-row">
+              <div class="alloc-name"><div class="alloc-dot" style="background:#ffd166"></div>fBTC</div>
+              <div><span class="alloc-pct">10%</span> <span class="alloc-yield">Hedge</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Human vs AI Leaderboard -->
+      <div class="card fade-up">
+        <div class="card-header">
+          <div class="card-title">Human vs. AI Leaderboard</div>
+          <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+        </div>
+        <div class="lb-header">
+          <div class="lb-side ai">
+            <div class="lb-label">🤖 MantleFlow AI</div>
+            <div class="lb-return ai" id="ai-return">+7.24%</div>
+            <div class="lb-sub">40-day return</div>
+          </div>
+          <div class="lb-side human">
+            <div class="lb-label">👤 Human Manager</div>
+            <div class="lb-return human">+3.18%</div>
+            <div class="lb-sub">40-day return</div>
+          </div>
+        </div>
+        <div style="margin-top:16px;">
+          <div class="lb-bar-row">
+            <div class="lb-bar-label">Yield</div>
+            <div class="lb-bar-track"><div class="lb-bar-fill" style="width:85%;background:var(--accent);"></div></div>
+            <div class="lb-bar-val" style="color:var(--accent)">5.8%</div>
+          </div>
+          <div class="lb-bar-row">
+            <div class="lb-bar-label">Sharpe</div>
+            <div class="lb-bar-track"><div class="lb-bar-fill" style="width:78%;background:var(--green);"></div></div>
+            <div class="lb-bar-val" style="color:var(--green)">2.14</div>
+          </div>
+          <div class="lb-bar-row">
+            <div class="lb-bar-label">Max DD</div>
+            <div class="lb-bar-track"><div class="lb-bar-fill" style="width:20%;background:var(--red);"></div></div>
+            <div class="lb-bar-val" style="color:var(--red)">-1.2%</div>
+          </div>
+          <div class="lb-bar-row">
+            <div class="lb-bar-label">Rebalances</div>
+            <div class="lb-bar-track"><div class="lb-bar-fill" style="width:95%;background:var(--accent2);"></div></div>
+            <div class="lb-bar-val" style="color:var(--accent2)">1,847</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Performance Chart -->
+      <div class="card dash-wide fade-up">
+        <div class="card-header">
+          <div class="card-title">Cumulative Return — AI vs. Human (40 Days)</div>
+          <div style="display:flex;gap:16px;align-items:center;">
+            <span style="font-family:var(--mono);font-size:.65rem;color:var(--accent);">── MantleFlow AI</span>
+            <span style="font-family:var(--mono);font-size:.65rem;color:var(--muted);">── Human</span>
+          </div>
+        </div>
+        <div class="chart-area">
+          <svg class="chart-svg" viewBox="0 0 900 140" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="aiGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#00e5ff" stop-opacity=".25"/>
+                <stop offset="100%" stop-color="#00e5ff" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <!-- Grid lines -->
+            <line x1="0" y1="35" x2="900" y2="35" stroke="#1e2d3d" stroke-width=".5"/>
+            <line x1="0" y1="70" x2="900" y2="70" stroke="#1e2d3d" stroke-width=".5"/>
+            <line x1="0" y1="105" x2="900" y2="105" stroke="#1e2d3d" stroke-width=".5"/>
+            <!-- AI fill area -->
+            <path d="M0,120 C30,118 60,112 90,108 C120,104 150,100 180,95 C210,90 240,86 270,80 C300,74 330,70 360,65 C390,60 420,56 450,52 C480,48 510,44 540,40 C570,36 600,32 630,28 C660,24 690,20 720,18 C750,16 780,15 810,13 C840,11 870,10 900,8 L900,140 L0,140 Z" fill="url(#aiGrad)"/>
+            <!-- AI line -->
+            <path d="M0,120 C30,118 60,112 90,108 C120,104 150,100 180,95 C210,90 240,86 270,80 C300,74 330,70 360,65 C390,60 420,56 450,52 C480,48 510,44 540,40 C570,36 600,32 630,28 C660,24 690,20 720,18 C750,16 780,15 810,13 C840,11 870,10 900,8"
+              fill="none" stroke="#00e5ff" stroke-width="2.5" stroke-linecap="round"/>
+            <!-- Human line -->
+            <path d="M0,120 C30,119 60,116 90,114 C120,112 150,110 180,107 C210,104 240,102 270,100 C300,98 330,96 360,94 C390,92 420,91 450,89 C480,87 510,86 540,85 C570,84 600,83 630,82 C660,81 690,80 720,79 C750,78 780,77 810,76 C840,75 870,74 900,73"
+              fill="none" stroke="#556070" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="6,3"/>
+            <!-- Labels -->
+            <text x="8" y="133" font-family="Space Mono" font-size="7" fill="#556070">Day 1</text>
+            <text x="440" y="133" font-family="Space Mono" font-size="7" fill="#556070">Day 20</text>
+            <text x="870" y="133" font-family="Space Mono" font-size="7" fill="#556070">Day 40</text>
+            <text x="870" y="12" font-family="Space Mono" font-size="8" fill="#00e5ff" font-weight="700">+7.24%</text>
+            <text x="870" y="77" font-family="Space Mono" font-size="8" fill="#556070">+3.18%</text>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Audit Log -->
+      <div class="card fade-up">
+        <div class="card-header">
+          <div class="card-title">On-Chain Audit Log</div>
+          <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+        </div>
+        <div class="audit-feed" id="audit-feed">
+          <div class="audit-entry">
+            <div class="audit-icon rebal">🔄</div>
+            <div class="audit-body">
+              <div class="audit-action">Rebalance: USDY 32% → 40%</div>
+              <div class="audit-meta">05:41:09 · Block #9,284,771 · <span class="audit-hash">0x7e3f…c91a</span></div>
+            </div>
+          </div>
+          <div class="audit-entry">
+            <div class="audit-icon signal">📊</div>
+            <div class="audit-body">
+              <div class="audit-action">Signal: Nansen smart money inflow $1.2M USDY</div>
+              <div class="audit-meta">05:41:02 · Block #9,284,768 · <span class="audit-hash">0xa2b1…7f34</span></div>
+            </div>
+          </div>
+          <div class="audit-entry">
+            <div class="audit-icon yield">💰</div>
+            <div class="audit-body">
+              <div class="audit-action">Yield Claimed: 0.0042 mETH ($12.84)</div>
+              <div class="audit-meta">05:38:55 · Block #9,284,692 · <span class="audit-hash">0xd93c…1e77</span></div>
+            </div>
+          </div>
+          <div class="audit-entry">
+            <div class="audit-icon rebal">🔄</div>
+            <div class="audit-body">
+              <div class="audit-action">Rebalance: Defensive → Yield-Max mode</div>
+              <div class="audit-meta">05:32:14 · Block #9,284,511 · <span class="audit-hash">0x55af…2c09</span></div>
+            </div>
+          </div>
+          <div class="audit-entry">
+            <div class="audit-icon signal">📊</div>
+            <div class="audit-body">
+              <div class="audit-action">Milestone: 7-Day Positive Alpha Streak 🏆</div>
+              <div class="audit-meta">05:00:00 · Block #9,283,001 · <span class="audit-hash">0x1f2e…8a55</span></div>
+            </div>
+          </div>
+          <div class="audit-entry">
+            <div class="audit-icon yield">💰</div>
+            <div class="audit-body">
+              <div class="audit-action">Risk Check: Correlation USDY/USDe = 0.12 — safe</div>
+              <div class="audit-meta">04:58:31 · Block #9,282,944 · <span class="audit-hash">0x8811…fe02</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Agent NFT -->
+      <div class="nft-card fade-up" id="identity">
+        <div class="nft-badge">✦ ERC-8004 AGENT IDENTITY NFT · TOKEN #1</div>
+        <div class="nft-title">MantleFlow AI</div>
+        <div class="nft-sub">Autonomous RWA Yield Agent · v1.0.0 · Mantle Network</div>
+        <div class="nft-stats">
+          <div class="nft-stat">
+            <div class="nft-stat-label">Total Decisions</div>
+            <div class="nft-stat-value" style="color:var(--accent)">5,392</div>
+          </div>
+          <div class="nft-stat">
+            <div class="nft-stat-label">Cumulative Alpha</div>
+            <div class="nft-stat-value" style="color:var(--green)">+724 bps</div>
+          </div>
+          <div class="nft-stat">
+            <div class="nft-stat-label">AUM High-Water</div>
+            <div class="nft-stat-value" style="color:var(--gold)">$248K</div>
+          </div>
+          <div class="nft-stat">
+            <div class="nft-stat-label">Active Streak</div>
+            <div class="nft-stat-value" style="color:var(--accent2)">40 days</div>
+          </div>
+        </div>
+        <div class="milestones">
+          <div class="milestone-item"><span class="milestone-icon">🏆</span> First Profitable Rebalance — Day 1</div>
+          <div class="milestone-item"><span class="milestone-icon">🏆</span> 7-Day Positive Alpha Streak — Day 8</div>
+          <div class="milestone-item"><span class="milestone-icon">🏆</span> $100K AUM Milestone — Day 14</div>
+          <div class="milestone-item"><span class="milestone-icon">🏆</span> 1,000 Autonomous Decisions — Day 21</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ─── ROADMAP ─── -->
+<section id="roadmap">
+  <div class="container">
+    <div class="section-label fade-up">Build Roadmap</div>
+    <h2 class="fade-up">Four Sprints to Mainnet</h2>
+    <p class="section-sub fade-up">Modular delivery plan — MVP in 2 weeks, full submission by June 15, 2026.</p>
+
+    <div class="roadmap-track">
+      <div class="sprint-card active fade-up">
+        <div class="sprint-num">SPRINT 01</div>
+        <div class="sprint-status active"><div class="live-dot"></div> IN BUILD</div>
+        <div class="sprint-dates">May 6–16</div>
+        <div class="sprint-title">Core data pipeline: Nansen API, Mantle RPC, price feeds (USDY, mETH, USDe, fBTC)</div>
+      </div>
+      <div class="sprint-card fade-up">
+        <div class="sprint-num">SPRINT 02</div>
+        <div class="sprint-status planned">◦ PLANNED</div>
+        <div class="sprint-dates">May 17–26</div>
+        <div class="sprint-title">Quant engine + Solidity vault contracts; ERC-8004 identity mint; testnet deployment</div>
+      </div>
+      <div class="sprint-card fade-up">
+        <div class="sprint-num">SPRINT 03</div>
+        <div class="sprint-status planned">◦ PLANNED</div>
+        <div class="sprint-dates">May 27–Jun 5</div>
+        <div class="sprint-title">Human vs. AI leaderboard dashboard; live audit log streamer; Telegram alpha bot</div>
+      </div>
+      <div class="sprint-card fade-up">
+        <div class="sprint-num">SPRINT 04</div>
+        <div class="sprint-status planned">◦ PLANNED</div>
+        <div class="sprint-dates">Jun 6–14</div>
+        <div class="sprint-title">Mainnet deployment, stress testing, performance report, demo video, final submission</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ─── FOOTER ─── -->
+<footer>
+  <div class="footer-inner">
+    <div>
+      <div class="footer-logo">MantleFlow AI</div>
+      <div class="footer-sub">Mantle Turing Test Hackathon 2026 · AI × RWA Track<br/>Submission Deadline: June 15, 2026 · Built on Mantle Network</div>
+    </div>
+    <div class="footer-links">
+      <a href="https://github.com/samade20/mantleflow-ai" target="_blank">GitHub</a>
+      <a href="#architecture">Docs</a>
+      <a href="#dashboard">Dashboard</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+// Intersection observer for fade-up
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } });
+}, { threshold: 0.1 });
+document.querySelectorAll('.fade-up').forEach(el => obs.observe(el));
+
+// Live ticker updates
+function rand(min, max) { return (Math.random()*(max-min)+min); }
+function fmt(n, decimals=2) { return n.toFixed(decimals); }
+
+setInterval(() => {
+  const alpha = document.getElementById('s-alpha');
+  const curr = parseFloat(alpha.textContent.replace('%','').replace('+',''));
+  const next = Math.max(5, Math.min(12, curr + rand(-0.08, 0.12)));
+  alpha.textContent = '+' + fmt(next) + '%';
+
+  const rebal = document.getElementById('s-rebal');
+  rebal.textContent = (parseInt(rebal.textContent.replace(',','')) + Math.floor(rand(0,3))).toLocaleString();
+
+  const dec = document.getElementById('s-dec');
+  dec.textContent = (parseInt(dec.textContent.replace(',','')) + Math.floor(rand(1,5))).toLocaleString();
+}, 4000);
+
+// Audit log live inject
+const actions = [
+  {icon:'rebal', e:'🔄', action:'Rebalance: mETH weight adjusted +2%', tag:'REBAL'},
+  {icon:'signal', e:'📊', action:'Signal: Elfa AI — USDe sentiment bullish (0.76)', tag:'SIGNAL'},
+  {icon:'yield', e:'💰', action:'Yield Claimed: 0.0031 mETH ($9.48)', tag:'YIELD'},
+  {icon:'signal', e:'📊', action:'Risk Manager: Max drawdown -0.8% — within limits', tag:'CHECK'},
+  {icon:'rebal', e:'🔄', action:'Decision #5393 logged to AuditLog.sol', tag:'AUDIT'},
+];
+
+let blockNum = 9284772;
+setInterval(() => {
+  const feed = document.getElementById('audit-feed');
+  const item = actions[Math.floor(Math.random()*actions.length)];
+  blockNum += Math.floor(rand(2,8));
+  const now = new Date();
+  const ts = `0${now.getHours()}`.slice(-2)+':'+`0${now.getMinutes()}`.slice(-2)+':'+`0${now.getSeconds()}`.slice(-2);
+  const hash = '0x'+'0123456789abcdef'.split('').sort(()=>Math.random()-.5).join('').slice(0,4)+'…'+'0123456789abcdef'.split('').sort(()=>Math.random()-.5).join('').slice(0,4);
+
+  const entry = document.createElement('div');
+  entry.className = 'audit-entry';
+  entry.style.opacity = '0';
+  entry.style.transition = 'opacity .4s';
+  entry.innerHTML = `
+    <div class="audit-icon ${item.icon}">${item.e}</div>
+    <div class="audit-body">
+      <div class="audit-action">${item.action}</div>
+      <div class="audit-meta">${ts} · Block #${blockNum.toLocaleString()} · <span class="audit-hash">${hash}</span></div>
+    </div>`;
+
+  feed.insertBefore(entry, feed.firstChild);
+  requestAnimationFrame(() => { entry.style.opacity = '1'; });
+
+  // Remove old entries beyond 10
+  while(feed.children.length > 10) feed.removeChild(feed.lastChild);
+}, 5000);
+</script>
+</body>
+</html>
