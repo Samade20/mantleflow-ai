@@ -183,7 +183,7 @@ That is not a hackathon project. That is **the future of on-chain finance**, bui
 
 <div align="center">
 
-**MantleFlow AI · Mantle Turing Test Hackathon 2026 · AI × RWA Track**  
+MantleFlow AI · Mantle Turing Test Hackathon 2026 · AI × RWA Track  
 Submission Deadline: June 15, 2026 · Built on Mantle Network
 
 </div>
